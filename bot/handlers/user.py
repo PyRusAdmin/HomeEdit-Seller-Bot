@@ -14,4 +14,11 @@ async def cmd_start(message: Message):
 
     await save_bot_user(message)  # Сохраняем пользователя в базу данных и логируем
     logger.info(f'Пользователь {message.from_user.id} запустил бота')
+
+    if message.from_user.id == 535185511:
+        await message.answer('Привет, Админ!')
+
+    if message.from_user.id == 7181118530:
+        await message.answer('Привет, Менеджер!')
+
     await message.answer('Пожалуйста, введите артикул товара, по которому вы хотите получить поддержку!')
