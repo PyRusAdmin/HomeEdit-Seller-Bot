@@ -17,6 +17,7 @@ class BotUsers(Model):
     chat_type = CharField()  # Тип чата (private, group и т.д.)
     language_code = CharField(null=True)  # Язык Telegram
     date_start = CharField()  # Дата первого запуска
+    role = CharField(default="user")  # Роль пользователя
 
     class Meta:
         database = db
@@ -30,13 +31,14 @@ async def save_bot_user(message):
     from datetime import datetime
 
     try:
-        user_id = message.from_user.id
-        username = message.from_user.username
-        first_name = message.from_user.first_name
-        last_name = message.from_user.last_name
-        chat_type = message.chat.type
-        lang = message.from_user.language_code
-        date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        user_id = message.from_user.id  # Получаем ID пользователя из сообщения
+        username = message.from_user.username  # Получаем username пользователя (может быть None)
+        first_name = message.from_user.first_name  # Получаем имя пользователя
+        last_name = message.from_user.last_name  # Получаем фамилию пользователя (может быть None)
+        chat_type = message.chat.type  # Определяем тип чата (личный, группа и т.д.)
+        lang = message.from_user.language_code  # Получаем языковой код пользователя
+        date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Форматируем текущую дату и время для записи в БД
 
         user, created = BotUsers.get_or_create(
             user_id=user_id,
