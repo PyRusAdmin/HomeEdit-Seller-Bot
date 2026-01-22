@@ -4,6 +4,8 @@ from bot.bot import bot
 from bot.dispatcher import dispatcher
 from loguru import logger
 from bot.utils.database import db, BotUsers
+from bot.handlers.admin import router as admin_router
+from bot.handlers.user import router as user_router
 
 logger.add('logs/logs.log', rotation='10 MB', compression='zip')
 
@@ -19,6 +21,8 @@ class App:
         db.connect()
         db.create_tables([BotUsers])
         try:
+            dispatcher.include_router(admin_router)
+            dispatcher.include_router(user_router)
             await dispatcher.start_polling(bot)
         except Exception as e:
             logger.exception(e)
