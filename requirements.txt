@@ -1,0 +1,6 @@
+aiogram==3.0.0b8
+python-dotenv
+# aiosqlite (if you need database)
+# sqlalchemy (if you need database)
+# redis (if you need redis storage)
+# uvicorn (if you need webhooks)
