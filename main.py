@@ -1,6 +1,9 @@
 import asyncio
 from bot.bot import bot
 from bot.dispatcher import dispatcher
+from loguru import logger
+
+logger.add('logs/logs.log', rotation='10 MB', compression='zip')
 
 
 class App:
@@ -9,11 +12,11 @@ class App:
         self.bot = bot
 
     async def start(self):
-        print('Bot is starting...')
+        logger.info('Бот запущен...')
         try:
             await dispatcher.start_polling(bot)
         except Exception as e:
-            print(f'Error: {e}')
+            logger.exception(e)
         finally:
             await bot.session.close()
 
