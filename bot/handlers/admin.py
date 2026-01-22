@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types import FSInputFile
 from aiogram.types import Message
 from loguru import logger
-from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
+from bot.keyboards.admin import set_role_keyboard
 from bot.states.admin import Admin
 from bot.utils.database import update_user_role, get_all_bot_users
 import asyncio
@@ -90,6 +90,7 @@ async def log(callback: CallbackQuery, state: FSMContext, bot):
         logger.exception(e)
 
     await callback.answer()  # Обязательно: подтверждаем callback
+    await state.clear()
 
 
 @router.callback_query(F.data == "miss_message")
