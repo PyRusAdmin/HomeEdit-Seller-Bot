@@ -3,7 +3,7 @@ import asyncio
 from bot.bot import bot
 from bot.dispatcher import dispatcher
 from loguru import logger
-from bot.utils.database import db, BotUsers
+from bot.utils.database import db, BotUsers, SupportTicket, TicketMessage
 from bot.handlers.admin import router as admin_router
 from bot.handlers.user import router as user_router
 
@@ -20,6 +20,7 @@ class App:
         # Создаем таблицы в базе данных
         db.connect()
         db.create_tables([BotUsers])
+        db.create_tables([BotUsers, SupportTicket, TicketMessage])
         try:
             dispatcher.include_router(admin_router)  # Роутер для админов
             dispatcher.include_router(user_router)  # Роутер для пользователей

@@ -2,10 +2,37 @@
 from datetime import datetime
 
 from loguru import logger
-from peewee import SqliteDatabase, Model, CharField, IntegerField
+from peewee import SqliteDatabase, Model, CharField, IntegerField, DateTimeField, ForeignKeyField, TextField
 
 # Настройка подключения к базе данных SQLite (или другой базы данных)
 db = SqliteDatabase(f"data/database.db")
+
+
+class SupportTicket(Model):
+    ticket_id = CharField(unique=True)  # Например, "TICKET_123456"
+    user_id = IntegerField()
+    status = CharField(default="open")  # open / closed
+    created_at = DateTimeField(default=datetime.now)
+    closed_at = DateTimeField(null=True)
+
+    # Новые поля:
+    chat_id = IntegerField(null=True)      # ID чата, куда отправлен тикет
+    message_id = IntegerField(null=True)   # ID сообщения с кнопками
+
+    class Meta:
+        database = db
+        table_name = "support_tickets"
+
+
+class TicketMessage(Model):
+    ticket = ForeignKeyField(SupportTicket, backref='messages')
+    sender = CharField()  # "user" или "manager"
+    text = TextField()
+    sent_at = DateTimeField(default=datetime.now)
+
+    class Meta:
+        database = db
+        table_name = "ticket_messages"
 
 
 class BotUsers(Model):
