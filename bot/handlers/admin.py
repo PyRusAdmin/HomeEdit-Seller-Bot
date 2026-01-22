@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-from aiogram import Router, F
+from aiogram import F
+from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery
+from aiogram.types import FSInputFile
+from aiogram.types import Message
 
 from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
 from bot.states.admin import Admin
@@ -59,3 +62,14 @@ async def process_role_selection(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text)
     await callback.answer()
     await state.clear()
+
+
+@router.callback_query(F.data == "get_log")
+async def log(callback: CallbackQuery, state: FSMContext):
+    await state.clear()  # Сбрасываем текущее состояние FSM
+    document = FSInputFile("logs/logs.log")
+    await callback.answer_document(
+        document=document,  # Файл логов для отправки
+        caption=f"📄 Лог файл с ошибками.",  # Текст под файлом
+        parse_mode="HTML",  # Режим разметки для капшна
+    )
