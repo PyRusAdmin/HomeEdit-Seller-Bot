@@ -21,8 +21,8 @@ class App:
         db.connect()
         db.create_tables([BotUsers])
         try:
-            dispatcher.include_router(admin_router)
-            dispatcher.include_router(user_router)
+            dispatcher.include_router(admin_router)  # Роутер для админов
+            dispatcher.include_router(user_router)  # Роутер для пользователей
             await dispatcher.start_polling(bot)
         except Exception as e:
             logger.exception(e)

@@ -16,3 +16,21 @@ def main_keyboard_admin() -> InlineKeyboardMarkup:
 
         ]
     )
+
+
+def set_role_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура для выбора роли
+    :return: InlineKeyboardMarkup
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="👤 Пользователь", callback_data="user"),
+                InlineKeyboardButton(text="🛡️ Администратор", callback_data="admin")
+            ],
+            [
+                InlineKeyboardButton(text="💼 Менеджер", callback_data="manager")
+            ],
+        ]
+    )

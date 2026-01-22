@@ -2,39 +2,56 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
-from loguru import logger
 
+from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
 from bot.states.admin import Admin
 
 router = Router(name=__name__)
 
 
-# Обработка нажатия на inline-кнопку "Присвоить роль"
 @router.callback_query(F.data == "set_role")
 async def set_role_start(callback: CallbackQuery, state: FSMContext):
-    """
-    Запускает процесс назначения роли: запрашивает ID пользователя.
-    """
-    try:
-        await state.clear()
-        await callback.message.answer("Введите id пользователя бота для назначения роли:")
-        await state.set_state(Admin.id_user)
-        await callback.answer()  # Подтверждаем нажатие кнопки (убираем "часики")
-    except Exception as e:
-        logger.exception(e)
+    """Запрашивает ID пользователя."""
+    await state.clear()
+    await callback.message.answer("Введите ID пользователя для назначения роли:")
+    await state.set_state(Admin.id_user)
+    await callback.answer()
 
 
-# Обработка ввода ID пользователя
 @router.message(Admin.id_user)
 async def process_id_user(message: Message, state: FSMContext):
+    """Проверяет ID и показывает клавиатуру выбора роли."""
     id_user = message.text.strip()
     if not id_user.isdigit():
-        await message.answer("Пожалуйста, введите корректный числовой ID пользователя.")
+        await message.answer("❌ Некорректный ID. Введите число.")
         return
 
-    logger.info(f"Пользователь {message.from_user.id} назначил роль пользователю {id_user}")
-    # Здесь можно добавить логику сохранения роли, например:
-    # await assign_role_to_user(int(id_user))
+    await state.update_data(id_user=int(id_user))  # Сохраняем ID как число
+    await message.answer(
+        f"Выберите роль для пользователя с ID {id_user}:",
+        reply_markup=set_role_keyboard()
+    )
+    await state.set_state(Admin.role)  # Переходим к следующему состоянию
 
-    await message.answer(f"Роль будет назначена пользователю с ID: {id_user}")
+
+@router.callback_query(Admin.role, F.data.in_({"user", "admin", "manager"}))
+async def process_role_selection(callback: CallbackQuery, state: FSMContext):
+    """Обрабатывает выбор роли и завершает процесс."""
+    role = callback.data  # "user", "admin" или "manager"
+    data = await state.get_data()
+    id_user = data["id_user"]
+
+    # Здесь вы можете сохранить роль в БД (пример ниже)
+    # await assign_role_to_user(id_user, role)
+
+    role_labels = {
+        "user": "👤 Пользователь",
+        "admin": "🛡️ Администратор",
+        "manager": "💼 Менеджер"
+    }
+
+    await callback.message.edit_text(
+        f"✅ Роль {role_labels[role]} успешно назначена пользователю с ID {id_user}."
+    )
+    await callback.answer()
     await state.clear()
