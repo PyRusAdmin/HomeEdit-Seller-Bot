@@ -26,6 +26,13 @@ class BotUsers(Model):
         table_name = "bot_users"
 
 
+def get_all_bot_users() -> list:
+    """
+    Возвращает список всех user_id, которые когда-либо запускали бота.
+    """
+    return [user.user_id for user in BotUsers.select(BotUsers.user_id)]
+
+
 def get_user_role(user_id: int) -> str:
     """
     Возвращает роль пользователя по его user_id.

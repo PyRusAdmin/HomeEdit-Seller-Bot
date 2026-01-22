@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import FSInputFile
 from aiogram.types import Message
-
+from loguru import logger
 from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
 from bot.states.admin import Admin
 from bot.utils.database import update_user_role
@@ -86,6 +86,37 @@ async def log(callback: CallbackQuery, state: FSMContext, bot):
     except FileNotFoundError:
         await callback.message.answer("❌ Файл логов не найден.")
     except Exception as e:
-        await callback.message.answer("❌ Ошибка при отправке логов.")
+        logger.exception(e)
 
     await callback.answer()  # Обязательно: подтверждаем callback
+
+
+@router.callback_query(F.data == "miss_message")
+async def miss_message(callback: CallbackQuery, state: FSMContext, bot):
+    """
+    Отправляет сообщения пользователям бота, которые ранее взаимодействовали с ботом.
+    :param callback:
+    :param state:
+    :param bot:
+    :return:
+    """
+    await state.clear()
+
+    try:
+        await callback.message.answer("Введите сообщение которое хотите отправить всем пользователям")
+        await state.set_state(Admin.message_text)
+        await callback.answer()
+    except Exception as e:
+        logger.exception(e)
+
+
+@router.message(Admin.message_text)
+async def send_message(message: Message, state: FSMContext, bot):
+    """
+    Отправляет сообщение всем пользователям из базы данных.
+    """
+    text = message.text.strip()
+    if not text:
+        await message.answer("❌ Необходимо ввести текст сообщения.")
+        return
+

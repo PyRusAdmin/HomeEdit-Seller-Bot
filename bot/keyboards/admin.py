@@ -13,7 +13,9 @@ def main_keyboard_admin() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="🎯 Присвоить роль", callback_data="set_role"),
                 InlineKeyboardButton(text="📄 Получить лог файл", callback_data="get_log")
             ],
-
+            [
+                InlineKeyboardButton(text="📩 Рассылка сообщений", callback_data="miss_message"),
+            ],
         ]
     )
 
