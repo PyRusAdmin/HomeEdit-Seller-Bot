@@ -84,7 +84,7 @@ async def user_question_handler(message: Message, state: FSMContext, bot):
     ticket.save()
 
     await message.answer("✅ Ваше обращение передано в техподдержку.")
-    await state.clear()
+    # await state.clear()
 
 
 @router.callback_query(F.data.startswith("reply:"))
