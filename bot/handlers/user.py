@@ -2,12 +2,14 @@
 from aiogram import F
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import Message
 from loguru import logger
 
 from bot import bot
 from bot.keyboards.admin import main_keyboard_admin
+from bot.states.manager import ManagerStates
 from bot.states.user import UserStates
 from bot.utils.database import save_bot_user, get_user_role
 
@@ -90,3 +92,29 @@ async def handle_reply_callback(callback: CallbackQuery, state: FSMContext):
         f"Напишите ответ пользователю (ID: {user_id}):"
     )
     await callback.answer()
+
+
+@router.message(ManagerStates.reply_message)
+async def send_reply_to_user(message: Message, state: FSMContext, bot):
+    data = await state.get_data()
+    user_id = data.get("reply_to_user_id")
+
+    if not user_id:
+        await message.answer("❌ Ошибка: не найден получатель.")
+        await state.clear()
+        return
+
+    try:
+        await bot.send_message(
+            chat_id=user_id,
+            text=(
+                "📬 Ответ от технической поддержки:\n\n"
+                f"{message.text}"
+            )
+        )
+        await message.answer("✅ Ответ отправлен пользователю.")
+    except Exception as e:
+        logger.exception(e)
+        await message.answer("❌ Не удалось отправить ответ (пользователь заблокировал бота?).")
+
+    await state.clear()
