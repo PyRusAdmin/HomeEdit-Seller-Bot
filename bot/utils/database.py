@@ -9,15 +9,16 @@ db = SqliteDatabase(f"data/database.db")
 
 
 class SupportTicket(Model):
+    """
+    Таблица тикетов поддержки
+    """
     ticket_id = CharField(unique=True)  # Например, "TICKET_123456"
     user_id = IntegerField()
     status = CharField(default="open")  # open / closed
     created_at = DateTimeField(default=datetime.now)
     closed_at = DateTimeField(null=True)
-
-    # Новые поля:
-    chat_id = IntegerField(null=True)      # ID чата, куда отправлен тикет
-    message_id = IntegerField(null=True)   # ID сообщения с кнопками
+    chat_id = IntegerField(null=True)  # чат поддержки
+    message_id = IntegerField(null=True)  # сообщение с кнопками
 
     class Meta:
         database = db
@@ -25,6 +26,9 @@ class SupportTicket(Model):
 
 
 class TicketMessage(Model):
+    """
+    Сообщения в тикете
+    """
     ticket = ForeignKeyField(SupportTicket, backref='messages')
     sender = CharField()  # "user" или "manager"
     text = TextField()

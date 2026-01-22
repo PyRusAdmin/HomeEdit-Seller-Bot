@@ -1,71 +1,100 @@
-# -*- coding: utf-8 -*-
+# bot/handlers/user.py
+from aiogram import F, Router
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from loguru import logger
 import uuid
 from datetime import datetime
 
-from aiogram import F
-from aiogram import Router
-from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import Message
-from loguru import logger
-
-from bot.keyboards.admin import main_keyboard_admin
+from bot.utils.database import (
+    save_bot_user,
+    get_user_role,
+    BotUsers,
+    SupportTicket,
+    TicketMessage,
+)
 from bot.states.manager import ManagerStates
-from bot.states.user import UserStates
-from bot.utils.database import save_bot_user, get_user_role, SupportTicket, TicketMessage
+from bot.keyboards.admin import main_keyboard_admin
 
 router = Router(name=__name__)
 
+SUPPORT_CHAT_ID = -1003502660042  # вынесено в константу
 
-@router.message(F.text == '/start')
+
+@router.message(F.text == "/start")
 async def cmd_start(message: Message, state: FSMContext):
-    """Команда /start"""
-
     await state.clear()
-    await save_bot_user(message)  # Сохраняем пользователя в базу данных и логируем
-    logger.info(f'Пользователь {message.from_user.id} запустил бота')
+    await save_bot_user(message)
+    logger.info(f"Пользователь {message.from_user.id} запустил бота")
 
-    # Получаем роль из базы данных
     role = get_user_role(message.from_user.id)
 
     if role == "admin":
-        await message.answer('Привет, Админ!', reply_markup=main_keyboard_admin())
+        await message.answer("Привет, Админ!", reply_markup=main_keyboard_admin())
     elif role == "manager":
-        await message.answer('Привет, Менеджер!')
-    else:  # role == "user" или любой другой
-        await message.answer(
-            'Пожалуйста, введите артикул товара 📦, по которому вы хотите получить поддержку! 💬',
-            parse_mode='HTML'
+        await message.answer("Привет, Менеджер!")
+    else:
+        # Проверяем открытый тикет
+        open_ticket = SupportTicket.get_or_none(
+            (SupportTicket.user_id == message.from_user.id) &
+            (SupportTicket.status == "open")
         )
-        await state.set_state(UserStates.user_question)
+        if open_ticket:
+            await message.answer(
+                "У вас уже есть активное обращение. Дополните его прямо здесь."
+            )
+        else:
+            await message.answer(
+                "Пожалуйста, опишите ваш вопрос или проблему:",
+                parse_mode="HTML"
+            )
 
 
-@router.message(UserStates.user_question)
-async def user_question_handler(message: Message, state: FSMContext, bot):
-    user_text = message.text.strip()
+@router.message(F.text)
+async def handle_user_message(message: Message, bot):
     user_id = message.from_user.id
-    username = f"@{message.from_user.username}" if message.from_user.username else "нет"
+    role = get_user_role(user_id)
 
-    # Создаём тикет
-    ticket_id = f"TICKET_{uuid.uuid4().hex[:8].upper()}"
-    ticket = SupportTicket.create(ticket_id=ticket_id, user_id=user_id)
+    if role in ("admin", "manager"):
+        return  # игнорируем
 
-    # Сохраняем первое сообщение
-    TicketMessage.create(ticket=ticket, sender="user", text=user_text)
-
-    SUPPORT_CHAT_ID = -1003502660042
-
-    reply_kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📨 Ответить", callback_data=f"reply:{ticket_id}"),
-                InlineKeyboardButton(text="CloseOperation️ Закрыть", callback_data=f"close:{ticket_id}")
-            ]
-        ]
+    # Ищем открытый тикет
+    ticket = SupportTicket.get_or_none(
+        (SupportTicket.user_id == user_id) &
+        (SupportTicket.status == "open")
     )
 
-    sent_msg = await bot.send_message(
+    if ticket:
+        # Добавляем к существующему
+        TicketMessage.create(ticket=ticket, sender="user", text=message.text.strip())
+        await bot.send_message(
+            chat_id=ticket.chat_id,
+            text=f"🔁 Новое сообщение:\n\n{message.text}",
+            reply_to_message_id=ticket.message_id,
+        )
+        await message.answer("✅ Сообщение добавлено к вашему обращению.")
+        return
+
+    # Создаём новый тикет
+    ticket_id = f"TICKET_{uuid.uuid4().hex[:8].upper()}"
+    user_text = message.text.strip()
+    username = f"@{message.from_user.username}" if message.from_user.username else "нет"
+
+    ticket = SupportTicket.create(
+        ticket_id=ticket_id,
+        user_id=user_id,
+        status="open"
+    )
+    TicketMessage.create(ticket=ticket, sender="user", text=user_text)
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📨 Ответить", callback_data=f"reply:{ticket_id}"),
+            InlineKeyboardButton(text="CloseOperation️ Закрыть", callback_data=f"close:{ticket_id}")
+        ]
+    ])
+
+    sent = await bot.send_message(
         chat_id=SUPPORT_CHAT_ID,
         text=(
             f"📩 Новое обращение:\n"
@@ -75,17 +104,14 @@ async def user_question_handler(message: Message, state: FSMContext, bot):
             f"{user_text}"
         ),
         parse_mode="HTML",
-        reply_markup=reply_kb
+        reply_markup=kb
     )
 
-    # Сохраняем message_id и chat_id в тикет
-    ticket.message_id = sent_msg.message_id
-    ticket.chat_id = sent_msg.chat.id
+    ticket.chat_id = sent.chat.id
+    ticket.message_id = sent.message_id
     ticket.save()
 
     await message.answer("✅ Ваше обращение передано в техподдержку.")
-    # await state.clear()
-
 
 @router.callback_query(F.data.startswith("reply:"))
 async def handle_reply_callback(callback: CallbackQuery, state: FSMContext):
@@ -114,42 +140,46 @@ async def send_reply_to_user(message: Message, state: FSMContext, bot):
             return
 
         # Сохраняем ответ менеджера
-        TicketMessage.create(ticket=ticket, sender="manager", text=message.text)
+        TicketMessage.create(ticket=ticket, sender="manager", text=message.text.strip())
 
         # Отправляем пользователю
-        await bot.send_message(
-            chat_id=ticket.user_id,
-            text=f"📬 Ответ от поддержки:\n\n{message.text}"
-        )
-
-        # === Обновляем ИСХОДНОЕ сообщение с кнопками ===
-        if ticket.chat_id and ticket.message_id:
-            new_kb = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(text="📨 Ответить", callback_data=f"reply:{ticket_id}"),
-                        InlineKeyboardButton(text="CloseOperation️ Закрыть", callback_data=f"close:{ticket_id}")
-                    ]
-                ]
+        try:
+            await bot.send_message(
+                chat_id=ticket.user_id,
+                text=f"📬 Ответ от поддержки:\n\n{message.text}"
             )
+            logger.info(f"✅ Ответ отправлен пользователю {ticket.user_id}")
+        except Exception as e:
+            logger.error(f"❌ Не удалось отправить ответ: {e}")
+            await message.answer("❌ Не удалось доставить сообщение пользователю.")
+
+        # Обновляем кнопки (опционально)
+        if ticket.chat_id and ticket.message_id:
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="📨 Ответить", callback_data=f"reply:{ticket_id}"),
+                    InlineKeyboardButton(text="CloseOperation️ Закрыть", callback_data=f"close:{ticket_id}")
+                ]
+            ])
             try:
                 await bot.edit_message_reply_markup(
                     chat_id=ticket.chat_id,
                     message_id=ticket.message_id,
-                    reply_markup=new_kb
+                    reply_markup=kb
                 )
             except Exception as e:
-                logger.warning(f"Не удалось обновить кнопки тикета {ticket_id}: {e}")
+                if "message is not modified" not in str(e):
+                    logger.warning(f"Не удалось обновить кнопки: {e}")
+
         await message.answer("✅ Ответ отправлен.")
 
     except SupportTicket.DoesNotExist:
         await message.answer("❌ Тикет не найден.")
     except Exception as e:
         logger.exception(e)
-        await message.answer("❌ Ошибка отправки.")
+        await message.answer("❌ Ошибка при отправке ответа.")
 
     await state.clear()
-
 
 @router.callback_query(F.data.startswith("close:"))
 async def close_ticket(callback: CallbackQuery, bot):
@@ -170,7 +200,6 @@ async def close_ticket(callback: CallbackQuery, bot):
             text="🔒 Ваше обращение закрыто. Спасибо за обращение!"
         )
 
-        # Обновляем сообщение в чате
         # Убираем кнопки у исходного сообщения
         if ticket.chat_id and ticket.message_id:
             await bot.edit_message_reply_markup(
