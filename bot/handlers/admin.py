@@ -65,11 +65,20 @@ async def process_role_selection(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "get_log")
-async def log(callback: CallbackQuery, state: FSMContext):
-    await state.clear()  # Сбрасываем текущее состояние FSM
-    document = FSInputFile("logs/logs.log")
-    await callback.answer_document(
-        document=document,  # Файл логов для отправки
-        caption=f"📄 Лог файл с ошибками.",  # Текст под файлом
-        parse_mode="HTML",  # Режим разметки для капшна
-    )
+async def log(callback: CallbackQuery, state: FSMContext, bot):
+    await state.clear()
+
+    try:
+        document = FSInputFile("logs/logs.log")
+        await callback.message.answer_document(
+            document=document,
+            caption="📄 Лог файл с ошибками.",
+            parse_mode="HTML"
+        )
+    except FileNotFoundError:
+        await callback.message.answer("❌ Файл логов не найден.")
+    except Exception as e:
+        await callback.message.answer("❌ Ошибка при отправке логов.")
+        # Можно залогировать e
+
+    await callback.answer()  # Обязательно: подтверждаем callback
