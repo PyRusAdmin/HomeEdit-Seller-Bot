@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Пример обычной клавиатуры
-main_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="/start")
+
+def main_keyboard_admin() -> InlineKeyboardMarkup:
+    """
+    Главная клавиатура админа
+    :return: InlineKeyboardMarkup
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Присвоить роль", callback_data="set_role")
+            ]
         ]
-    ],
-    resize_keyboard=True
-)
+    )
