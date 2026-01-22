@@ -87,3 +87,4 @@ fabric.properties
 /.env
 /logs/
 TODO.md
+/data/database.db

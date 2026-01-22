@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 from aiogram.types import Message
 import time

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from .handlers.user import router as user_router

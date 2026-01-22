@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from aiogram import Bot
 import os
 from dotenv import load_dotenv
