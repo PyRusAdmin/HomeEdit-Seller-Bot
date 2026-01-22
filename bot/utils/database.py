@@ -26,6 +26,18 @@ class BotUsers(Model):
         table_name = "bot_users"
 
 
+def get_user_role(user_id: int) -> str:
+    """
+    Возвращает роль пользователя по его user_id.
+    Если пользователь не найден — возвращает 'user' (по умолчанию).
+    """
+    try:
+        user = BotUsers.get(BotUsers.user_id == user_id)
+        return user.role
+    except BotUsers.DoesNotExist:
+        return "user"  # или "guest", если хотите
+
+
 def update_user_role(user_id: int, role: str):
     """
     Обновляет роль пользователя в базе данных.
