@@ -8,7 +8,8 @@ from aiogram.types import Message
 from loguru import logger
 from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
 from bot.states.admin import Admin
-from bot.utils.database import update_user_role
+from bot.utils.database import update_user_role, get_all_bot_users
+import asyncio
 
 router = Router(name=__name__)
 
@@ -115,8 +116,35 @@ async def send_message(message: Message, state: FSMContext, bot):
     """
     Отправляет сообщение всем пользователям из базы данных.
     """
-    text = message.text.strip()
-    if not text:
-        await message.answer("❌ Необходимо ввести текст сообщения.")
-        return
+    try:
+        text = message.text.strip()
+        if not text:
+            await message.answer("❌ Необходимо ввести текст сообщения.")
+            return
 
+        user_ids = get_all_bot_users()  # Получаем все ID пользователей из базы данных
+        total = len(user_ids)
+        sent = 0
+        failed = 0
+
+        await message.answer(f"📤 Начинаю рассылку {total} пользователям...")
+
+        for user_id in user_ids:
+            try:
+                await bot.send_message(chat_id=user_id, text=text)
+                sent += 1
+            except Exception as e:
+                logger.exception(e)
+                failed += 1
+
+            await asyncio.sleep(0.04)  # Задержка для ограничения частоты запросов
+
+        await message.answer(
+            f"✅ Рассылка завершена!\n"
+            f"Отправлено: {sent}\n"
+            f"Ошибок: {failed}"
+        )
+        await state.clear()
+
+    except Exception as e:
+        logger.exception(e)
