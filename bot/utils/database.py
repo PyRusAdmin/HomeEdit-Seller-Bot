@@ -1,27 +1,65 @@
-"""
-Модуль для работы с базой данных
-"""
+# -*- coding: utf-8 -*-
+from peewee import SqliteDatabase, Model, CharField, IntegerField
+from loguru import logger
 
-# Пример использования с SQLAlchemy и aiosqlite
-# import asyncio
-# from sqlalchemy import text
-# from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-# from sqlalchemy.orm import sessionmaker
+# Настройка подключения к базе данных SQLite (или другой базы данных)
+db = SqliteDatabase(f"data/database.db")
 
-# class Database:
-#     def __init__(self, database_url: str):
-#         self.engine = create_async_engine(database_url)
-#         self.async_session = sessionmaker(
-#             self.engine, class_=AsyncSession, expire_on_commit=False
-#         )
 
-#     async def init_db(self):
-#         async with self.engine.begin() as conn:
-#             await conn.run_sync(create_tables)  # функция create_tables должна быть определена
+class BotUsers(Model):
+    """
+    Таблица пользователей, которые запускали бота.
+    """
+    user_id = IntegerField(unique=True)  # ID пользователя
+    username = CharField(null=True)  # username
+    first_name = CharField(null=True)  # Имя
+    last_name = CharField(null=True)  # Фамилия
+    chat_type = CharField()  # Тип чата (private, group и т.д.)
+    language_code = CharField(null=True)  # Язык Telegram
+    date_start = CharField()  # Дата первого запуска
 
-#     async def get_session(self) -> AsyncSession:
-#         async with self.async_session() as session:
-#             return session
+    class Meta:
+        database = db
+        table_name = "bot_users"
 
-#     async def close(self):
-#         await self.engine.dispose()
+
+async def save_bot_user(message):
+    """
+    Сохраняет или обновляет данные о пользователе, который запустил бота.
+    """
+    from datetime import datetime
+
+    try:
+        user_id = message.from_user.id
+        username = message.from_user.username
+        first_name = message.from_user.first_name
+        last_name = message.from_user.last_name
+        chat_type = message.chat.type
+        lang = message.from_user.language_code
+        date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        user, created = BotUsers.get_or_create(
+            user_id=user_id,
+            defaults={
+                "username": username,
+                "first_name": first_name,
+                "last_name": last_name,
+                "chat_type": chat_type,
+                "language_code": lang,
+                "date_start": date_now,
+            },
+        )
+
+        if not created:
+            # обновляем данные, если пользователь уже есть
+            user.username = username
+            user.first_name = first_name
+            user.last_name = last_name
+            user.chat_type = chat_type
+            user.language_code = lang
+            user.save()
+
+        logger.info(f"✅ Пользователь {user_id} сохранён в БД (new={created})")
+
+    except Exception as e:
+        logger.exception(e)
