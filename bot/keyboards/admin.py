@@ -10,7 +10,9 @@ def main_keyboard_admin() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Присвоить роль", callback_data="set_role")
-            ]
+                InlineKeyboardButton(text="🎯 Присвоить роль", callback_data="set_role"),
+                InlineKeyboardButton(text="📄 Получить лог файл", callback_data="get_log")
+            ],
+
         ]
     )
