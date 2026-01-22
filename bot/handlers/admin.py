@@ -5,6 +5,7 @@ from aiogram.types import Message, CallbackQuery
 
 from bot.keyboards.admin import set_role_keyboard  # ← убедитесь, что путь правильный
 from bot.states.admin import Admin
+from bot.utils.database import update_user_role
 
 router = Router(name=__name__)
 
@@ -41,8 +42,8 @@ async def process_role_selection(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     id_user = data["id_user"]
 
-    # Здесь вы можете сохранить роль в БД (пример ниже)
-    # await assign_role_to_user(id_user, role)
+    # Обновляем роль в базе данных
+    success = update_user_role(id_user, role)
 
     role_labels = {
         "user": "👤 Пользователь",
@@ -50,8 +51,11 @@ async def process_role_selection(callback: CallbackQuery, state: FSMContext):
         "manager": "💼 Менеджер"
     }
 
-    await callback.message.edit_text(
-        f"✅ Роль {role_labels[role]} успешно назначена пользователю с ID {id_user}."
-    )
+    if success:
+        text = f"✅ Роль {role_labels[role]} успешно назначена пользователю с ID {id_user}."
+    else:
+        text = f"❌ Пользователь с ID {id_user} не найден в базе данных. Сначала он должен запустить бота."
+
+    await callback.message.edit_text(text)
     await callback.answer()
     await state.clear()

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from peewee import SqliteDatabase, Model, CharField, IntegerField
 from loguru import logger
+from datetime import datetime
+from datetime import datetime
 
 # Настройка подключения к базе данных SQLite (или другой базы данных)
 db = SqliteDatabase(f"data/database.db")
@@ -24,11 +26,43 @@ class BotUsers(Model):
         table_name = "bot_users"
 
 
+def update_user_role(user_id: int, role: str):
+    """
+    Обновляет роль пользователя в базе данных.
+
+    Если пользователь с указанным user_id существует, обновляет его роль.
+    Если пользователь не существует, создаёт новую запись с указанной ролью
+    и остальными полями по умолчанию.
+
+    Args:
+        user_id (int): Уникальный идентификатор пользователя в Telegram.
+        role (str): Новая роль пользователя (например, 'user', 'admin').
+
+    Returns:
+        bool: Всегда возвращает True после успешного обновления или создания записи.
+    """
+    user, created = BotUsers.get_or_create(
+        user_id=user_id,
+        defaults={
+            "username": None,
+            "first_name": None,
+            "last_name": None,
+            "chat_type": "private",
+            "language_code": None,
+            "date_start": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "role": role
+        }
+    )
+    if not created:
+        user.role = role
+        user.save()
+    return True
+
+
 async def save_bot_user(message):
     """
     Сохраняет или обновляет данные о пользователе, который запустил бота.
     """
-    from datetime import datetime
 
     try:
 
