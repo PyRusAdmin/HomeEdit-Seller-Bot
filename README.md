@@ -7,34 +7,34 @@
 ## Установка
 
 1. Клонируйте репозиторий:
-```bash
-git clone <ссылка_на_репозиторий>
-```
+    ```bash
+    git clone <ссылка_на_репозиторий>
+    ```
 
 2. Создайте виртуальное окружение:
-```bash
-python -m venv venv
-```
+    ```bash
+    python -m venv venv
+    ```
 
 3. Активируйте виртуальное окружение:
-- Windows:
-```bash
-venv\Scripts\activate
-```
-- Linux/MacOS:
-```bash
-source venv/bin/activate
-```
+   - Windows:
+   ```bash
+   venv\Scripts\activate
+   ```
+   - Linux/MacOS:
+   ```bash
+   source venv/bin/activate
+   ```
 
 4. Установите зависимости:
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 5. Создайте файл `.env` в корне проекта и добавьте туда токен бота:
-```env
-BOT_TOKEN=ваш_токен_бота
-```
+   ```env
+   BOT_TOKEN=ваш_токен_бота
+   ```
 
 ## Запуск
 

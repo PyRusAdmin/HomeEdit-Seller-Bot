@@ -4,4 +4,5 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-bot = Bot(token=os.getenv('BOT_TOKEN'))
+# Настройка сессии с пользовательским агентом
+bot = Bot(token=os.getenv('BOT_TOKEN'), session=None)
