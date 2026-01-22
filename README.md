@@ -17,11 +17,11 @@
     ```
 
 3. Активируйте виртуальное окружение:
-   - Windows:
+    - Windows:
    ```bash
    venv\Scripts\activate
    ```
-   - Linux/MacOS:
+    - Linux/MacOS:
    ```bash
    source venv/bin/activate
    ```
