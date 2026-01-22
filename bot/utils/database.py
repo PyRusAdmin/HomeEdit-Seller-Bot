@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from peewee import SqliteDatabase, Model, CharField, IntegerField
+from datetime import datetime
+
 from loguru import logger
-from datetime import datetime
-from datetime import datetime
+from peewee import SqliteDatabase, Model, CharField, IntegerField
 
 # Настройка подключения к базе данных SQLite (или другой базы данных)
 db = SqliteDatabase(f"data/database.db")
