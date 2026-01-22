@@ -66,6 +66,14 @@ async def process_role_selection(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "get_log")
 async def log(callback: CallbackQuery, state: FSMContext, bot):
+    """
+    Отправляет лог файл администратору.
+    :param callback:
+    :param state:
+    :param bot:
+    :return:
+    """
+
     await state.clear()
 
     try:
@@ -79,6 +87,5 @@ async def log(callback: CallbackQuery, state: FSMContext, bot):
         await callback.message.answer("❌ Файл логов не найден.")
     except Exception as e:
         await callback.message.answer("❌ Ошибка при отправке логов.")
-        # Можно залогировать e
 
     await callback.answer()  # Обязательно: подтверждаем callback
